@@ -237,11 +237,8 @@ class MainWindow(QMainWindow):
             selected_index.appendRow(model_message_item)
             parent_conversation_id = None
         else:
-            conversation_item = QtGui.QStandardItem(f"{conversation_id}")
-            conversation_item.setData(conversation_id, QtCore.Qt.UserRole + 1)
-            self.chat_history_model.appendRow(conversation_item)
-            conversation_item.appendRow(user_message_item)
-            conversation_item.appendRow(model_message_item)
+            self.chat_history_model.appendRow(user_message_item)
+            self.chat_history_model.appendRow(model_message_item)
             parent_conversation_id = conversation_id
             
         if chat_history_enabled == True:
@@ -281,37 +278,29 @@ class MainWindow(QMainWindow):
 
     def add_conversation_to_tree(self, parent_item, conversation):
         if not parent_item:
-            conversation_item = QtGui.QStandardItem(f"{conversation['conversation_id']}")
-            conversation_item.setData(conversation["conversation_id"], QtCore.Qt.UserRole)
-            self.chat_history_model.appendRow(conversation_item)
+            conversation_item = self.chat_history_model
         else:
             conversation_item = parent_item
+
         try:
             for message in conversation['messages']:
                 message_item = QtGui.QStandardItem(f"{message['sender']}: {message['text']}")
                 conversation_item.appendRow(message_item)
         except TypeError:
-            #   TypeError: 'NoneType' object is not subscriptable
-            # this error occurs when a branch was deleted but the branch message was not deleted
-            # the user should be notified that they need to delete the branch message
-
-            # show a warning message to the user
+            # Show a warning message to the user
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Warning)
-            msg.setText("there was an error loading the conversation. this is likely due to a branch being deleted but the marker for the branch not being deleted in the " + config['database'] + " database. the marker is a message that says 'Branches: <branch id>'. please delete the branch marker and try again.")
+            msg.setText("There was an error loading the conversation. This is likely due to a branch being deleted but the marker for the branch not being deleted in the " + config['database'] + " database. The marker is a message that says 'Branches: <branch id>'. Please delete the branch marker and try again.")
             msg.setWindowTitle("Warning")
             msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
             msg.exec_()
             return
 
-        # check if the config file has branching enabled
+        # Check if the config file has branching enabled
         if 'branches' in conversation:
             for branch_id in conversation['branches']:
-                # check if the config file has branching enabled
                 branch_conversation = database_module.get_conversation(self, branch_id)
-                # check if the config file has branching enabled
                 if branching_enabled == True:
-
                     for row in range(conversation_item.rowCount()):
                         item = conversation_item.child(row)
                         if item.text() == f"Branches: {branch_id}":
@@ -323,13 +312,14 @@ class MainWindow(QMainWindow):
                             parent_item_for_branch.setData(branch_id, QtCore.Qt.UserRole)
                             break
                 else:
-                    # do not add the branches to the tree view
-                    # hide the Branches message
+                    # Do not add the branches to the tree view
+                    # Hide the Branches message
                     for row in range(conversation_item.rowCount()):
                         item = conversation_item.child(row)
                         if item.text() == f"Branches: {branch_id}":
                             conversation_item.removeRow(row)
                             break
+
 
 
     def on_branch_selected(self):
